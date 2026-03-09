@@ -1,9 +1,6 @@
 import * as cheerio from "cheerio";
 
-const AUCTION_URL =
-    "https://alwafirawebapp-hhg9d6buh3hnefav.uaenorth-01.azurewebsites.net/LiveAuction/GetLiveAuctionGrid?dept=";
-
-const FULL_PAGE_URL =
+const AUCTION_PAGE_URL =
     "https://alwafirawebapp-hhg9d6buh3hnefav.uaenorth-01.azurewebsites.net/liveauction/index";
 
 export interface AuctionProduct {
@@ -59,6 +56,18 @@ export const PRODUCT_TRANSLATIONS: Record<string, string> = {
     "شمندر": "Beetroot",
     "لفت": "Turnip",
     "كراث": "Leek",
+    "اوراق القرع": "Pumpkin Leaves",
+    "ريحان": "Basil",
+    "رشاد": "Garden Cress",
+    "سيم": "Runner Beans",
+    "سلك": "Swiss Chard",
+    "رويد": "Ruwaid",
+    "فراوله": "Strawberry",
+    "فول": "Fava Beans",
+    "زعتر": "Thyme",
+    "بطاطا حلوة": "Sweet Potato",
+    "يقطين": "Pumpkin",
+    "ملوخيه": "Molokhia",
 };
 
 /**
@@ -68,13 +77,17 @@ export const PRODUCT_TRANSLATIONS: Record<string, string> = {
  */
 export function isWithinPollingWindow(): boolean {
     const now = new Date();
-    const kuwaitTime = new Date(
-        now.toLocaleString("en-US", { timeZone: "Asia/Kuwait" })
-    );
-    const hour = kuwaitTime.getHours();
+    // Format the current time explicitly in Asia/Kuwait timezone to parse the hour
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kuwait",
+        hour: "numeric",
+        hour12: false,
+    });
+    const hourStr = formatter.format(now);
+    const hour = parseInt(hourStr, 10);
 
     // Determine if we're in Ramadan period
-    const isRamadan = isRamadanPeriod(kuwaitTime);
+    const isRamadan = isRamadanPeriod(now);
 
     if (isRamadan) {
         // Ramadan: polling 8PM (20) to 6AM (6) — overnight session
@@ -94,47 +107,29 @@ function isRamadanPeriod(date: Date): boolean {
 
 /**
  * Scrape auction data from the Al-Wafira website.
- * First checks the full page for market status banner,
- * then fetches data from the API endpoint.
+ * Fetches the full page, checks market status, and parses the embedded data table.
  */
 export async function scrapeAuction(): Promise<ScrapeResult> {
     const scrapedAt = new Date().toISOString();
 
-    // Fetch the full page to check for market status banner
-    const pageResponse = await fetch(FULL_PAGE_URL, {
+    // Single fetch — the data table is embedded in the main page
+    const response = await fetch(AUCTION_PAGE_URL, {
         headers: {
             "User-Agent": "FurdaAuction/1.0",
         },
     });
-
-    if (!pageResponse.ok) {
-        throw new Error(`Failed to fetch auction page: ${pageResponse.status}`);
-    }
-
-    const pageHtml = await pageResponse.text();
-
-    // Check for "AUCTION WILL START SOON" banner = market closed
-    const isMarketOpen = !pageHtml.includes("AUCTION WILL START SOON");
-
-    // Fetch the data endpoint for the table
-    const response = await fetch(AUCTION_URL, {
-        headers: {
-            "User-Agent": "FurdaAuction/1.0",
-        },
-    });
-
-    const products: AuctionProduct[] = [];
 
     if (!response.ok) {
-        if (response.status === 404) {
-            // Market table is likely offline, return closed market state
-            return { isMarketOpen: false, products, scrapedAt };
-        }
-        throw new Error(`Failed to fetch auction data: ${response.status}`);
+        throw new Error(`Failed to fetch auction page: ${response.status}`);
     }
 
     const html = await response.text();
+
+    // Check for "AUCTION" and "IN - PROCESS" to confirm market is open
+    const isMarketOpen = html.includes("AUCTION") && html.includes("IN - PROCESS");
+
     const $ = cheerio.load(html);
+    const products: AuctionProduct[] = [];
 
     // Parse table rows - RTL DOM order: Pallets, Max, Min, Product
     $("tbody tr").each((_, row) => {
