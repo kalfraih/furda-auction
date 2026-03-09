@@ -139,6 +139,20 @@ export default function ProductCard({
                             }}
                         >
                             {product.nameEn || product.name}
+                            {product.nameEn && (
+                                <span
+                                    dir="rtl"
+                                    style={{
+                                        fontWeight: 400,
+                                        fontSize: 12,
+                                        color: "var(--text-muted)",
+                                        marginLeft: 6,
+                                        unicodeBidi: "isolate",
+                                    }}
+                                >
+                                    {product.name}
+                                </span>
+                            )}
                         </div>
                         <div
                             style={{
@@ -147,7 +161,7 @@ export default function ProductCard({
                                 marginTop: 1,
                             }}
                         >
-                            {product.name} · {product.palletCount} pallets
+                            {product.palletCount} pallets
                         </div>
                     </div>
                 </div>
