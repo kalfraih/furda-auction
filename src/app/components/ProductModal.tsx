@@ -20,8 +20,8 @@ interface ProductDetail {
     };
     stats: {
         open: number | null;
-        dayHigh: number;
-        dayLow: number;
+        dayHigh: number | null;
+        dayLow: number | null;
         prevClose: number | null;
         totalPallets: number;
     };
@@ -282,13 +282,13 @@ export default function ProductModal({ productId, onClose }: ProductModalProps) 
                             <div className="stat-item">
                                 <div className="stat-label">Day High</div>
                                 <div className="stat-value">
-                                    {data.stats.dayHigh.toFixed(3)}
+                                    {data.stats.dayHigh !== null ? data.stats.dayHigh.toFixed(3) : "—"}
                                 </div>
                             </div>
                             <div className="stat-item">
                                 <div className="stat-label">Day Low</div>
                                 <div className="stat-value">
-                                    {data.stats.dayLow.toFixed(3)}
+                                    {data.stats.dayLow !== null ? data.stats.dayLow.toFixed(3) : "—"}
                                 </div>
                             </div>
                             <div className="stat-item">
@@ -304,8 +304,9 @@ export default function ProductModal({ productId, onClose }: ProductModalProps) 
                             <div className="stat-item">
                                 <div className="stat-label">Range</div>
                                 <div className="stat-value">
-                                    {data.current.minPrice.toFixed(3)} –{" "}
-                                    {data.current.maxPrice.toFixed(3)}
+                                    {data.stats.dayLow !== null && data.stats.dayHigh !== null
+                                        ? `${data.stats.dayLow.toFixed(3)} – ${data.stats.dayHigh.toFixed(3)}`
+                                        : "—"}
                                 </div>
                             </div>
                         </div>

@@ -135,10 +135,10 @@ export async function GET(
         );
         const dayHigh = todaySnapshots.length > 0
             ? Math.max(...todaySnapshots.map((s) => s.maxPrice))
-            : latest?.maxPrice || 0;
+            : null;
         const dayLow = todaySnapshots.length > 0
             ? Math.min(...todaySnapshots.map((s) => s.minPrice))
-            : latest?.minPrice || 0;
+            : null;
         const totalPallets = todaySnapshots.reduce((sum, s) => sum + s.palletCount, 0);
 
         return NextResponse.json({
@@ -158,8 +158,8 @@ export async function GET(
             },
             stats: {
                 open: opening ? Number(((opening.minPrice + opening.maxPrice) / 2).toFixed(3)) : null,
-                dayHigh: Number(dayHigh.toFixed(3)),
-                dayLow: Number(dayLow.toFixed(3)),
+                dayHigh: dayHigh !== null ? Number(dayHigh.toFixed(3)) : null,
+                dayLow: dayLow !== null ? Number(dayLow.toFixed(3)) : null,
                 prevClose: prevClose ? Number(prevMid.toFixed(3)) : null,
                 totalPallets,
             },
