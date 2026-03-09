@@ -194,7 +194,7 @@ export default function ProductCard({
             </div>
 
             {/* Intra Change (between scrapes) */}
-            <div style={{ textAlign: "right", minWidth: 70 }}>
+            <div className="intra-change-col" style={{ textAlign: "right", minWidth: 70 }}>
                 <div
                     style={{
                         fontSize: 12,

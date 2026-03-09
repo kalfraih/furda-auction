@@ -7,28 +7,28 @@
   --bg-card: #1a1a25;
   --bg-card-hover: #22222f;
   --bg-modal: #15151f;
-  
+
   /* Text */
   --text-primary: #f0f0f5;
   --text-secondary: #9494a8;
   --text-muted: #5a5a70;
-  
+
   /* Accent */
   --gain: #00c853;
   --gain-bg: rgba(0, 200, 83, 0.08);
   --loss: #ff1744;
   --loss-bg: rgba(255, 23, 68, 0.08);
   --neutral: #9494a8;
-  
+
   /* Brand - ALFORDA purple */
   --brand: #6b2fa0;
   --brand-light: #8b4fc0;
   --brand-glow: rgba(107, 47, 160, 0.15);
-  
+
   /* Borders */
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.12);
-  
+
   /* Chart */
   --chart-area: rgba(107, 47, 160, 0.2);
   --chart-line: #8b4fc0;
@@ -58,13 +58,16 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-secondary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--text-muted);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
@@ -94,13 +97,25 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Period tabs */
@@ -141,6 +156,16 @@ body {
 .sparkline-container {
   width: 80px;
   height: 32px;
+}
+
+@media (max-width: 600px) {
+  .sparkline-container {
+    display: none;
+  }
+
+  .intra-change-col {
+    display: none;
+  }
 }
 
 /* Search input */
@@ -200,18 +225,17 @@ body {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 .loading-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-card) 0%,
-    var(--bg-card-hover) 50%,
-    var(--bg-card) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--bg-card) 0%,
+      var(--bg-card-hover) 50%,
+      var(--bg-card) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
