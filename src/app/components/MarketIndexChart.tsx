@@ -17,6 +17,7 @@ interface MarketIndexPoint {
     avgPrice: number;
     marketValue: number;
     avgSoldValue: number;
+    totalPallets?: number;
 }
 
 interface MarketIndexChartProps {
@@ -27,6 +28,7 @@ const METRICS = [
     { key: "avgPrice", label: "Avg Price", color: "#8b4fc0", yAxisId: "left" },
     { key: "marketValue", label: "Market Value", color: "#f59e0b", yAxisId: "right" },
     { key: "avgSoldValue", label: "Avg Sold Value", color: "#06b6d4", yAxisId: "right" },
+    { key: "totalPallets", label: "Pallets Sold", color: "#4ade80", yAxisId: "right" },
 ] as const;
 
 const PERIODS = ["1D", "5D", "1M", "6M", "1Y"] as const;
@@ -57,6 +59,7 @@ const CustomTooltip = ({ active, payload, label, period }: any) => {
         avgPrice: "Avg Price",
         marketValue: "Market Value",
         avgSoldValue: "Avg Sold Value",
+        totalPallets: "Pallets Sold",
     };
 
     return (
@@ -88,8 +91,9 @@ const CustomTooltip = ({ active, payload, label, period }: any) => {
                         {labelMap[p.dataKey] || p.dataKey}
                     </span>
                     <span style={{ fontWeight: 600 }}>
-                        {typeof p.value === "number" ? p.value.toFixed(3) : p.value}
-                        {" KWD"}
+                        {p.dataKey === "totalPallets"
+                            ? `${typeof p.value === "number" ? p.value : p.value}`
+                            : `${typeof p.value === "number" ? p.value.toFixed(3) : p.value} KWD`}
                     </span>
                 </div>
             ))}
@@ -157,6 +161,7 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
         avgPrice: true,
         marketValue: true,
         avgSoldValue: true,
+        totalPallets: true,
     });
 
     const fetchHistory = useCallback(async (p: Period) => {
@@ -278,8 +283,8 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
     const avgMax = Math.max(...avgPrices);
     const avgPad = (avgMax - avgMin) * 0.15 || 0.05;
 
-    // Compute right Y-axis (marketValue, avgSoldValue) domain
-    const rightValues = (data || []).flatMap((d) => [d.marketValue, d.avgSoldValue]);
+    // Compute right Y-axis (marketValue, avgSoldValue, totalPallets) domain
+    const rightValues = (data || []).flatMap((d) => [d.marketValue, d.avgSoldValue, d.totalPallets || 0]);
     const rightMin = Math.min(...rightValues);
     const rightMax = Math.max(...rightValues);
     const rightPad = (rightMax - rightMin) * 0.15 || 1;
@@ -330,6 +335,9 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
                             </span>
                             <span style={{ color: "#06b6d4" }}>
                                 AvgSold: {latest.avgSoldValue.toFixed(0)}
+                            </span>
+                            <span style={{ color: "#4ade80" }}>
+                                Pallets: {latest.totalPallets || 0}
                             </span>
                         </div>
                     )}
@@ -432,6 +440,18 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
                                 dot={period !== "1D"}
                                 strokeDasharray="6 3"
                                 activeDot={{ r: 3, stroke: "#06b6d4", strokeWidth: 2, fill: "var(--bg-modal)" }}
+                            />
+                        )}
+                        {visibleLines.totalPallets && (
+                            <Line
+                                yAxisId="right"
+                                type="monotone"
+                                dataKey="totalPallets"
+                                stroke="#4ade80"
+                                strokeWidth={1.5}
+                                dot={period !== "1D"}
+                                strokeDasharray="2 2"
+                                activeDot={{ r: 3, stroke: "#4ade80", strokeWidth: 2, fill: "var(--bg-modal)" }}
                             />
                         )}
                     </LineChart>

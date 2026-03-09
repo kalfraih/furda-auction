@@ -119,6 +119,7 @@ export async function GET() {
                     sparkline: intradaySnapshots.map((s) => ({
                         time: utc(s.timestamp),
                         mid: Number(((s.minPrice + s.maxPrice) / 2).toFixed(3)),
+                        pallets: s.palletCount,
                     })),
                 };
             })
@@ -156,11 +157,10 @@ export async function GET() {
                     indexByTime.set(sp.time, { totalMid: 0, count: 0, totalMarketVal: 0, totalPallets: 0 });
                 }
                 const entry = indexByTime.get(sp.time)!;
-                const pallets = palletByProduct.get(p.id) || 0;
                 entry.totalMid += sp.mid;
                 entry.count += 1;
-                entry.totalMarketVal += pallets * sp.mid;
-                entry.totalPallets += pallets;
+                entry.totalMarketVal += (sp.pallets || 0) * sp.mid;
+                entry.totalPallets += sp.pallets || 0;
             }
         }
 
@@ -173,6 +173,7 @@ export async function GET() {
                     avgPrice: Number(avgPrice.toFixed(3)),
                     marketValue: Number(data.totalMarketVal.toFixed(2)),
                     avgSoldValue: Number((data.totalPallets * avgPrice).toFixed(2)),
+                    totalPallets: data.totalPallets,
                 };
             });
 

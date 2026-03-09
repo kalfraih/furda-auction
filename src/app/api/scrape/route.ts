@@ -118,6 +118,13 @@ export async function GET(request: Request) {
             let productId: number;
             if (existing.length > 0) {
                 productId = existing[0].id;
+                // Update nameEn if missing and translation now available
+                const translation = PRODUCT_TRANSLATIONS[item.product];
+                if (!existing[0].nameEn && translation) {
+                    await db.update(schema.products)
+                        .set({ nameEn: translation })
+                        .where(eq(schema.products.id, productId));
+                }
             } else {
                 const inserted = await db
                     .insert(schema.products)

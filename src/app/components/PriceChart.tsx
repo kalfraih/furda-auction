@@ -1,8 +1,9 @@
 "use client";
 
 import {
-    AreaChart,
+    ComposedChart,
     Area,
+    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -69,10 +70,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                                 ? "Min"
                                 : p.dataKey === "max"
                                     ? "Max"
-                                    : p.dataKey}
+                                    : p.dataKey === "pallets"
+                                        ? "Pallets"
+                                        : p.dataKey}
                     </span>
                     <span style={{ fontWeight: 600 }}>
-                        {typeof p.value === "number" ? p.value.toFixed(3) : p.value}
+                        {p.dataKey === "pallets"
+                            ? (typeof p.value === "number" ? p.value : p.value)
+                            : (typeof p.value === "number" ? p.value.toFixed(3) + " KWD" : p.value)}
                     </span>
                 </div>
             ))}
@@ -133,9 +138,13 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
             ? "#ff1744"
             : "#8b4fc0";
 
+    // Pallets Y-axis domain
+    const palletValues = data.map((d) => d.pallets || 0);
+    const palletMax = Math.max(...palletValues, 1);
+
     return (
         <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={gradientColor} stopOpacity={0.25} />
@@ -161,6 +170,7 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                     minTickGap={40}
                 />
                 <YAxis
+                    yAxisId="left"
                     stroke="var(--text-muted)"
                     fontSize={11}
                     tickLine={false}
@@ -169,9 +179,21 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                     tickFormatter={(v: number) => v.toFixed(2)}
                     width={50}
                 />
+                <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="var(--text-muted)"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, palletMax * 1.2]}
+                    tickFormatter={(v: number) => v.toFixed(0)}
+                    width={40}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 {/* Min-Max range as background band */}
                 <Area
+                    yAxisId="left"
                     type="monotone"
                     dataKey="max"
                     stroke="none"
@@ -179,6 +201,7 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                     fillOpacity={1}
                 />
                 <Area
+                    yAxisId="left"
                     type="monotone"
                     dataKey="min"
                     stroke="none"
@@ -187,6 +210,7 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                 />
                 {/* Mid price line */}
                 <Area
+                    yAxisId="left"
                     type="monotone"
                     dataKey="mid"
                     stroke={gradientColor}
@@ -201,7 +225,18 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                         fill: "var(--bg-modal)",
                     }}
                 />
-            </AreaChart>
+                {/* Pallets sold line */}
+                <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="pallets"
+                    stroke="#4ade80"
+                    strokeWidth={1.5}
+                    strokeDasharray="3 2"
+                    dot={false}
+                    activeDot={{ r: 3, stroke: "#4ade80", strokeWidth: 2, fill: "var(--bg-modal)" }}
+                />
+            </ComposedChart>
         </ResponsiveContainer>
     );
 }
