@@ -16,6 +16,8 @@ interface ProductData {
     midPrice: number;
     change: number;
     changePercent: number;
+    intraChange: number;
+    intraChangePercent: number;
     palletCount: number;
     lastUpdate: string;
     sparkline: SparklinePoint[];
@@ -39,6 +41,14 @@ export default function ProductCard({
     const changeColor = isGain
         ? "var(--gain)"
         : isLoss
+            ? "var(--loss)"
+            : "var(--neutral)";
+
+    const isIntraGain = product.intraChange > 0;
+    const isIntraLoss = product.intraChange < 0;
+    const intraColor = isIntraGain
+        ? "var(--gain)"
+        : isIntraLoss
             ? "var(--loss)"
             : "var(--neutral)";
 
@@ -69,7 +79,7 @@ export default function ProductCard({
             id={`product-${product.id}`}
             style={{
                 display: "grid",
-                gridTemplateColumns: "1fr auto auto auto",
+                gridTemplateColumns: "1fr auto auto auto auto",
                 alignItems: "center",
                 gap: 16,
                 padding: "14px 20px",
@@ -169,11 +179,47 @@ export default function ProductCard({
                 </div>
             </div>
 
-            {/* Change */}
-            <div style={{ textAlign: "right", minWidth: 80 }}>
+            {/* Intra Change (between scrapes) */}
+            <div style={{ textAlign: "right", minWidth: 70 }}>
                 <div
                     style={{
-                        fontSize: 13,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: intraColor,
+                    }}
+                >
+                    {isIntraGain ? "+" : ""}
+                    {product.intraChange.toFixed(3)}
+                </div>
+                <div
+                    style={{
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: intraColor,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 2,
+                        padding: "1px 5px",
+                        borderRadius: 4,
+                        background: isIntraGain
+                            ? "var(--gain-bg)"
+                            : isIntraLoss
+                                ? "var(--loss-bg)"
+                                : "transparent",
+                        marginTop: 2,
+                    }}
+                >
+                    {isIntraGain ? "▲" : isIntraLoss ? "▼" : ""}
+                    {Math.abs(product.intraChangePercent).toFixed(2)}%
+                </div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>Intra</div>
+            </div>
+
+            {/* Daily Change (vs yesterday close) */}
+            <div style={{ textAlign: "right", minWidth: 70 }}>
+                <div
+                    style={{
+                        fontSize: 12,
                         fontWeight: 600,
                         color: changeColor,
                     }}
@@ -183,13 +229,13 @@ export default function ProductCard({
                 </div>
                 <div
                     style={{
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: 500,
                         color: changeColor,
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 2,
-                        padding: "1px 6px",
+                        padding: "1px 5px",
                         borderRadius: 4,
                         background: isGain
                             ? "var(--gain-bg)"
@@ -202,6 +248,7 @@ export default function ProductCard({
                     {isGain ? "▲" : isLoss ? "▼" : ""}
                     {Math.abs(product.changePercent).toFixed(2)}%
                 </div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>Daily</div>
             </div>
         </div>
     );

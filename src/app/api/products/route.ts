@@ -71,6 +71,15 @@ export async function GET() {
                     )
                     .orderBy(schema.priceSnapshots.timestamp);
 
+                // Second-to-last snapshot for intraday change (between consecutive scrapes)
+                const prevSnapArr = await db
+                    .select()
+                    .from(schema.priceSnapshots)
+                    .where(eq(schema.priceSnapshots.productId, product.id))
+                    .orderBy(desc(schema.priceSnapshots.timestamp))
+                    .limit(2);
+                const prevSnap = prevSnapArr.length >= 2 ? prevSnapArr[1] : null;
+
                 const currentMidPrice = (latest.minPrice + latest.maxPrice) / 2;
                 const prevMidPrice = prevClose
                     ? (prevClose.minPrice + prevClose.maxPrice) / 2
@@ -81,6 +90,13 @@ export async function GET() {
                 const change = currentMidPrice - prevMidPrice;
                 const changePercent = prevMidPrice !== 0 ? (change / prevMidPrice) * 100 : 0;
 
+                // Intra-day change: between the last two scrapes
+                const prevSnapMid = prevSnap
+                    ? (prevSnap.minPrice + prevSnap.maxPrice) / 2
+                    : currentMidPrice;
+                const intraChange = currentMidPrice - prevSnapMid;
+                const intraChangePercent = prevSnapMid !== 0 ? (intraChange / prevSnapMid) * 100 : 0;
+
                 return {
                     id: product.id,
                     name: product.name,
@@ -90,6 +106,8 @@ export async function GET() {
                     midPrice: Number(currentMidPrice.toFixed(3)),
                     change: Number(change.toFixed(3)),
                     changePercent: Number(changePercent.toFixed(2)),
+                    intraChange: Number(intraChange.toFixed(3)),
+                    intraChangePercent: Number(intraChangePercent.toFixed(2)),
                     palletCount: latest.palletCount,
                     lastUpdate: utc(latest.timestamp),
                     sparkline: intradaySnapshots.map((s) => ({
@@ -152,10 +170,15 @@ export async function GET() {
                 };
             });
 
+        // Use the most recent product snapshot timestamp as lastUpdate
+        const latestTimestamp = validProducts.reduce((max, p) => {
+            return p.lastUpdate > max ? p.lastUpdate : max;
+        }, "");
+
         return NextResponse.json({
             products: validProducts,
             marketIndex,
-            lastUpdate: new Date().toISOString(),
+            lastUpdate: latestTimestamp || new Date().toISOString(),
         });
     } catch (error) {
         console.error("Products API error:", error);

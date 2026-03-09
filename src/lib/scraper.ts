@@ -68,6 +68,10 @@ export const PRODUCT_TRANSLATIONS: Record<string, string> = {
     "بطاطا حلوة": "Sweet Potato",
     "يقطين": "Pumpkin",
     "ملوخيه": "Molokhia",
+    "كنار": "Jujube",
+    "نعناع": "Mint",
+    "برتقال شموطي": "Shamouti Orange",
+    "بقدونس": "Parsley",
 };
 
 /**

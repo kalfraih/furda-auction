@@ -20,6 +20,8 @@ interface ProductData {
   midPrice: number;
   change: number;
   changePercent: number;
+  intraChange: number;
+  intraChangePercent: number;
   palletCount: number;
   lastUpdate: string;
   sparkline: SparklinePoint[];
