@@ -149,7 +149,10 @@ export async function GET(
         const dayLow = todaySnapshots.length > 0
             ? Math.min(...todaySnapshots.map((s) => s.minPrice))
             : null;
-        const totalPallets = todaySnapshots.reduce((sum, s) => sum + s.palletCount, 0);
+        // palletCount in each snapshot is already the cumulative total at that moment
+        const totalPallets = todaySnapshots.length > 0
+            ? todaySnapshots[todaySnapshots.length - 1].palletCount
+            : 0;
 
         return NextResponse.json({
             product: {
