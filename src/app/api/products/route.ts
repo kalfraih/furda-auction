@@ -95,8 +95,61 @@ export async function GET() {
             })
         );
 
+        const validProducts = result.filter(Boolean) as NonNullable<typeof result[0]>[];
+
+        // Aggregate market index from all intraday sparklines
+        const timeMap = new Map<string, { prices: number[]; pallets: number[] }>();
+
+        for (const p of validProducts) {
+            for (const sp of p.sparkline) {
+                if (!timeMap.has(sp.time)) {
+                    timeMap.set(sp.time, { prices: [], pallets: [] });
+                }
+                const entry = timeMap.get(sp.time)!;
+                entry.prices.push(sp.mid);
+            }
+        }
+
+        // For pallets, we need snapshot-level data — pull from the DB for each time
+        // Instead, use the latest pallet counts per product (from the API data)
+        // and pair with sparkline mid prices
+        const palletByProduct = new Map<number, number>();
+        for (const p of validProducts) {
+            palletByProduct.set(p.id, p.palletCount);
+        }
+
+        // Build per-timestamp index using sparkline mid prices + latest pallet counts
+        const indexByTime = new Map<string, { totalMid: number; count: number; totalMarketVal: number; totalPallets: number }>();
+
+        for (const p of validProducts) {
+            for (const sp of p.sparkline) {
+                if (!indexByTime.has(sp.time)) {
+                    indexByTime.set(sp.time, { totalMid: 0, count: 0, totalMarketVal: 0, totalPallets: 0 });
+                }
+                const entry = indexByTime.get(sp.time)!;
+                const pallets = palletByProduct.get(p.id) || 0;
+                entry.totalMid += sp.mid;
+                entry.count += 1;
+                entry.totalMarketVal += pallets * sp.mid;
+                entry.totalPallets += pallets;
+            }
+        }
+
+        const marketIndex = Array.from(indexByTime.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([time, data]) => {
+                const avgPrice = data.count > 0 ? data.totalMid / data.count : 0;
+                return {
+                    time,
+                    avgPrice: Number(avgPrice.toFixed(3)),
+                    marketValue: Number(data.totalMarketVal.toFixed(2)),
+                    avgSoldValue: Number((data.totalPallets * avgPrice).toFixed(2)),
+                };
+            });
+
         return NextResponse.json({
-            products: result.filter(Boolean),
+            products: validProducts,
+            marketIndex,
             lastUpdate: new Date().toISOString(),
         });
     } catch (error) {

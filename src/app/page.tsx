@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MarketHeader from "@/app/components/MarketHeader";
+import MarketIndexChart from "@/app/components/MarketIndexChart";
 import ProductCard from "@/app/components/ProductCard";
 import ProductModal from "@/app/components/ProductModal";
 
@@ -24,11 +25,19 @@ interface ProductData {
   sparkline: SparklinePoint[];
 }
 
+interface MarketIndexPoint {
+  time: string;
+  avgPrice: number;
+  marketValue: number;
+  avgSoldValue: number;
+}
+
 type SortField = "name" | "price" | "change" | "pallets";
 type SortDir = "asc" | "desc";
 
 export default function Dashboard() {
   const [products, setProducts] = useState<ProductData[]>([]);
+  const [marketIndex, setMarketIndex] = useState<MarketIndexPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -41,6 +50,7 @@ export default function Dashboard() {
       const res = await fetch("/api/products");
       const data = await res.json();
       setProducts(data.products || []);
+      setMarketIndex(data.marketIndex || []);
       setLastUpdate(data.lastUpdate || "");
     } catch (error) {
       console.error("Failed to fetch products:", error);
@@ -108,6 +118,9 @@ export default function Dashboard() {
         gainers={gainers}
         losers={losers}
       />
+
+      {/* Market Index Chart */}
+      <MarketIndexChart data={marketIndex} />
 
       {/* Search + Sort Bar */}
       <div

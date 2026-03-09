@@ -28,7 +28,20 @@ export const priceSnapshots = pgTable(
   ]
 );
 
+export const marketIndexSnapshots = pgTable("market_index_snapshots", {
+  id: serial("id").primaryKey(),
+  date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+  avgPrice: real("avg_price").notNull(),
+  marketValue: real("market_value").notNull(),
+  avgSoldValue: real("avg_sold_value").notNull(),
+  productCount: integer("product_count").notNull(),
+  totalPallets: integer("total_pallets").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
 export type PriceSnapshot = typeof priceSnapshots.$inferSelect;
 export type NewPriceSnapshot = typeof priceSnapshots.$inferInsert;
+export type MarketIndexSnapshot = typeof marketIndexSnapshots.$inferSelect;
+export type NewMarketIndexSnapshot = typeof marketIndexSnapshots.$inferInsert;

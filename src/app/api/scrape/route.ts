@@ -54,9 +54,46 @@ export async function GET(request: Request) {
                         .where(eq(schema.priceSnapshots.id, snap.id));
                 }
 
+                // Record EOD market index snapshot
+                const closingSnaps = Array.from(latestByProduct.values());
+                let totalMid = 0;
+                let totalMarketVal = 0;
+                let totalPallets = 0;
+
+                for (const snap of closingSnaps) {
+                    const mid = (snap.minPrice + snap.maxPrice) / 2;
+                    totalMid += mid;
+                    totalMarketVal += snap.palletCount * mid;
+                    totalPallets += snap.palletCount;
+                }
+
+                const productCount = closingSnaps.length;
+                const avgPrice = productCount > 0 ? totalMid / productCount : 0;
+                const avgSoldValue = totalPallets * avgPrice;
+
+                await db.insert(schema.marketIndexSnapshots)
+                    .values({
+                        date: today,
+                        avgPrice: Number(avgPrice.toFixed(3)),
+                        marketValue: Number(totalMarketVal.toFixed(2)),
+                        avgSoldValue: Number(avgSoldValue.toFixed(2)),
+                        productCount,
+                        totalPallets,
+                    })
+                    .onConflictDoUpdate({
+                        target: schema.marketIndexSnapshots.date,
+                        set: {
+                            avgPrice: Number(avgPrice.toFixed(3)),
+                            marketValue: Number(totalMarketVal.toFixed(2)),
+                            avgSoldValue: Number(avgSoldValue.toFixed(2)),
+                            productCount,
+                            totalPallets,
+                        },
+                    });
+
                 return NextResponse.json({
                     status: "closed",
-                    message: `Marked ${latestByProduct.size} closing prices`,
+                    message: `Marked ${latestByProduct.size} closing prices, recorded market index`,
                     timestamp: result.scrapedAt,
                 });
             }

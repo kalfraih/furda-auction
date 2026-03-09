@@ -21,9 +21,9 @@ export interface ScrapeResult {
 
 // Arabic product name -> English translation map
 export const PRODUCT_TRANSLATIONS: Record<string, string> = {
-    "ابوركبه": "Squash (Aburkba)",
-    "بدريه": "Badriya Tomato",
-    "بغل": "Baghal Cucumber",
+    "ابوركبه": "Kohlrabi",
+    "بدريه": "Broad Bean",
+    "بغل": "Chard",
     "بربير": "Purslane",
     "بروكلي": "Broccoli",
     "ملفوف": "Cabbage",
@@ -38,11 +38,11 @@ export const PRODUCT_TRANSLATIONS: Record<string, string> = {
     "ذرة": "Corn",
     "خيار": "Cucumber",
     "باذنجان": "Eggplant",
-    "غلومان": "Ghlouman",
+    "غلومان": "Taro Root",
     "فاصوليا": "Green Beans",
     "بازلا": "Peas",
     "حلبه": "Fenugreek",
-    "هندباء": "Endive",
+    "هندباء": "Chicory",
     "جرجير": "Arugula",
     "طماطم": "Tomato",
     "بطاطا": "Potato",

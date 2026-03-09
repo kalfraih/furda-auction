@@ -15,9 +15,9 @@ async function main() {
     const db = drizzle(sql, { schema });
 
     const PRODUCT_TRANSLATIONS: Record<string, string> = {
-        "ابوركبه": "Squash (Aburkba)",
-        "بدريه": "Badriya Tomato",
-        "بغل": "Baghal Cucumber",
+        "ابوركبه": "Kohlrabi",
+        "بدريه": "Broad Bean",
+        "بغل": "Chard",
         "بربير": "Purslane",
         "بروكلي": "Broccoli",
         "ملفوف": "Cabbage",
@@ -32,11 +32,11 @@ async function main() {
         "ذرة": "Corn",
         "خيار": "Cucumber",
         "باذنجان": "Eggplant",
-        "غلومان": "Ghlouman",
+        "غلومان": "Taro Root",
         "فاصوليا": "Green Beans",
         "بازلا": "Peas",
         "حلبه": "Fenugreek",
-        "هندباء": "Endive",
+        "هندباء": "Chicory",
         "جرجير": "Arugula",
         "طماطم": "Tomato",
         "بطاطا": "Potato",
