@@ -31,17 +31,17 @@ export async function GET(request: Request) {
             // Market is closed - check if we need to mark closing prices
             // Find today's snapshots that aren't yet marked as closing
             const today = new Date().toISOString().split("T")[0];
-            const todaySnapshots = db
+            const todaySnapshots = await db
                 .select()
                 .from(schema.priceSnapshots)
-                .where(eq(schema.priceSnapshots.isClosingPrice, false))
-                .all()
-                .filter((s) => s.timestamp.startsWith(today));
+                .where(eq(schema.priceSnapshots.isClosingPrice, false));
 
-            if (todaySnapshots.length > 0) {
+            const filtered = todaySnapshots.filter((s) => s.timestamp.startsWith(today));
+
+            if (filtered.length > 0) {
                 // Get the latest snapshot per product and mark as closing
                 const latestByProduct = new Map<number, typeof todaySnapshots[0]>();
-                for (const snap of todaySnapshots) {
+                for (const snap of filtered) {
                     const existing = latestByProduct.get(snap.productId);
                     if (!existing || snap.timestamp > existing.timestamp) {
                         latestByProduct.set(snap.productId, snap);
@@ -49,10 +49,9 @@ export async function GET(request: Request) {
                 }
 
                 for (const [, snap] of latestByProduct) {
-                    db.update(schema.priceSnapshots)
+                    await db.update(schema.priceSnapshots)
                         .set({ isClosingPrice: true })
-                        .where(eq(schema.priceSnapshots.id, snap.id))
-                        .run();
+                        .where(eq(schema.priceSnapshots.id, snap.id));
                 }
 
                 return NextResponse.json({
@@ -73,29 +72,28 @@ export async function GET(request: Request) {
         let insertedCount = 0;
         for (const item of result.products) {
             // Upsert product
-            const existing = db
+            const existing = await db
                 .select()
                 .from(schema.products)
                 .where(eq(schema.products.name, item.product))
-                .get();
+                .limit(1);
 
             let productId: number;
-            if (existing) {
-                productId = existing.id;
+            if (existing.length > 0) {
+                productId = existing[0].id;
             } else {
-                const inserted = db
+                const inserted = await db
                     .insert(schema.products)
                     .values({
                         name: item.product,
                         nameEn: PRODUCT_TRANSLATIONS[item.product] || null,
                     })
-                    .returning()
-                    .get();
-                productId = inserted.id;
+                    .returning();
+                productId = inserted[0].id;
             }
 
             // Insert snapshot
-            db.insert(schema.priceSnapshots)
+            await db.insert(schema.priceSnapshots)
                 .values({
                     productId,
                     timestamp: result.scrapedAt,
@@ -103,8 +101,7 @@ export async function GET(request: Request) {
                     maxPrice: item.maxPrice,
                     palletCount: item.palletCount,
                     isClosingPrice: false,
-                })
-                .run();
+                });
 
             insertedCount++;
         }

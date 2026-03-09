@@ -1,41 +1,13 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import * as schema from "./schema";
+import dotenv from "dotenv";
+import { eq } from "drizzle-orm";
 
-const DB_PATH = process.env.DATABASE_URL || path.join(process.cwd(), "data", "auction.db");
+dotenv.config();
 
-// Ensure data directory exists
-const dir = path.dirname(DB_PATH);
-if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-}
-
-const sqlite = new Database(DB_PATH);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-
-// Create tables
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    name_en TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS price_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id INTEGER NOT NULL REFERENCES products(id),
-    timestamp TEXT NOT NULL,
-    min_price REAL NOT NULL,
-    max_price REAL NOT NULL,
-    pallet_count INTEGER NOT NULL,
-    is_closing_price INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_snapshots_product_time ON price_snapshots(product_id, timestamp);
-  CREATE INDEX IF NOT EXISTS idx_snapshots_closing ON price_snapshots(product_id, is_closing_price);
-`);
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql, { schema });
 
 // Product translations
 const TRANSLATIONS: Record<string, string> = {
@@ -88,32 +60,6 @@ const seedProducts = [
     "غلومان", "حلبه", "هندباء",
 ];
 
-// Insert products
-const insertProduct = sqlite.prepare(
-    `INSERT OR IGNORE INTO products (name, name_en) VALUES (?, ?)`
-);
-
-for (const name of seedProducts) {
-    insertProduct.run(name, TRANSLATIONS[name] || null);
-}
-
-// Get all product IDs
-const productRows = sqlite.prepare(`SELECT id, name FROM products`).all() as Array<{ id: number; name: string }>;
-const productMap = new Map(productRows.map((r) => [r.name, r.id]));
-
-// Generate seed price snapshots for the past 7 days
-const insertSnapshot = sqlite.prepare(`
-  INSERT INTO price_snapshots (product_id, timestamp, min_price, max_price, pallet_count, is_closing_price)
-  VALUES (?, ?, ?, ?, ?, ?)
-`);
-
-// Clear existing snapshots for clean seed
-sqlite.exec(`DELETE FROM price_snapshots`);
-
-const now = new Date();
-const DAYS_BACK = 7;
-const HOURS_PER_DAY = [10, 11, 12, 13, 14, 15, 16]; // Normal market hours
-
 // Base prices per product (realistic KWD prices)
 const basePrices: Record<string, { min: number; max: number; pallets: number }> = {
     "خيار": { min: 0.275, max: 2.9, pallets: 200 },
@@ -145,7 +91,31 @@ function randomVariation(base: number, variance: number): number {
     return Math.max(0.01, Number((base + (Math.random() - 0.5) * 2 * variance).toFixed(3)));
 }
 
-const insertMany = sqlite.transaction(() => {
+async function main() {
+    console.log("Emptying existing price snapshots...");
+    await db.delete(schema.priceSnapshots);
+
+    console.log("Upserting products...");
+    for (const name of seedProducts) {
+        const existing = await db.select().from(schema.products).where(eq(schema.products.name, name)).limit(1);
+        if (existing.length === 0) {
+            await db.insert(schema.products).values({
+                name,
+                nameEn: TRANSLATIONS[name] || null,
+            });
+        }
+    }
+
+    const allProducts = await db.select().from(schema.products);
+    const productMap = new Map(allProducts.map((p) => [p.name, p.id]));
+
+    const now = new Date();
+    const DAYS_BACK = 7;
+    const HOURS_PER_DAY = [10, 11, 12, 13, 14, 15, 16]; // Normal market hours
+
+    console.log("Generating price snapshots...");
+    const snapshotsToInsert: (typeof schema.priceSnapshots.$inferInsert)[] = [];
+
     for (let dayOffset = DAYS_BACK; dayOffset >= 0; dayOffset--) {
         const date = new Date(now);
         date.setDate(date.getDate() - dayOffset);
@@ -153,7 +123,7 @@ const insertMany = sqlite.transaction(() => {
         // Skip if it's a Friday (Kuwait weekend)
         if (date.getDay() === 5) continue;
 
-        for (const [productName, productId] of productMap) {
+        for (const [productName, productId] of Array.from(productMap.entries())) {
             const base = basePrices[productName];
             if (!base) continue;
 
@@ -179,24 +149,27 @@ const insertMany = sqlite.transaction(() => {
 
                 const isClosing = i === HOURS_PER_DAY.length - 1;
 
-                insertSnapshot.run(
+                snapshotsToInsert.push({
                     productId,
-                    timestamp.toISOString(),
+                    timestamp: timestamp.toISOString(),
                     minPrice,
                     maxPrice,
                     palletCount,
-                    isClosing ? 1 : 0
-                );
+                    isClosingPrice: isClosing,
+                });
             }
         }
     }
-});
 
-insertMany();
+    console.log(`Inserting ${snapshotsToInsert.length} snapshots in batches...`);
+    // Insert in batches of 500
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < snapshotsToInsert.length; i += BATCH_SIZE) {
+        const batch = snapshotsToInsert.slice(i, i + BATCH_SIZE);
+        await db.insert(schema.priceSnapshots).values(batch);
+    }
 
-const snapshotCount = (sqlite.prepare(`SELECT COUNT(*) as count FROM price_snapshots`).get() as { count: number }).count;
-const productCount = (sqlite.prepare(`SELECT COUNT(*) as count FROM products`).get() as { count: number }).count;
+    console.log("✅ Database seeding complete.");
+}
 
-console.log(`✅ Seeded ${productCount} products with ${snapshotCount} price snapshots over ${DAYS_BACK} days`);
-
-sqlite.close();
+main().catch(console.error);

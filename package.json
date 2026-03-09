@@ -11,9 +11,10 @@
     "db:seed": "npx tsx src/db/seed.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2",
+    "@neondatabase/serverless": "^1.0.2",
     "cheerio": "^1.2.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -22,7 +23,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

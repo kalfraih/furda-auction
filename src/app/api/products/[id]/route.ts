@@ -16,12 +16,13 @@ export async function GET(
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
-        const product = db
+        const productArr = await db
             .select()
             .from(schema.products)
             .where(eq(schema.products.id, productId))
-            .get();
+            .limit(1);
 
+        const product = productArr[0];
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -60,7 +61,7 @@ export async function GET(
         }
 
         // Get snapshots for the period
-        const snapshots = db
+        const snapshots = await db
             .select()
             .from(schema.priceSnapshots)
             .where(
@@ -69,20 +70,19 @@ export async function GET(
                     gte(schema.priceSnapshots.timestamp, sinceDate.toISOString())
                 )
             )
-            .orderBy(schema.priceSnapshots.timestamp)
-            .all();
+            .orderBy(schema.priceSnapshots.timestamp);
 
         // Get latest snapshot
-        const latest = db
+        const latestArr = await db
             .select()
             .from(schema.priceSnapshots)
             .where(eq(schema.priceSnapshots.productId, productId))
             .orderBy(desc(schema.priceSnapshots.timestamp))
-            .limit(1)
-            .get();
+            .limit(1);
+        const latest = latestArr[0];
 
         // Get previous closing price
-        const prevClose = db
+        const prevCloseArr = await db
             .select()
             .from(schema.priceSnapshots)
             .where(
@@ -92,13 +92,13 @@ export async function GET(
                 )
             )
             .orderBy(desc(schema.priceSnapshots.timestamp))
-            .limit(1)
-            .get();
+            .limit(1);
+        const prevClose = prevCloseArr[0];
 
         // Today's first snapshot (opening)
         const todayStart = new Date(now);
         todayStart.setHours(0, 0, 0, 0);
-        const opening = db
+        const openingArr = await db
             .select()
             .from(schema.priceSnapshots)
             .where(
@@ -108,11 +108,11 @@ export async function GET(
                 )
             )
             .orderBy(schema.priceSnapshots.timestamp)
-            .limit(1)
-            .get();
+            .limit(1);
+        const opening = openingArr[0];
 
         // Closing prices for historical chart
-        const closingPrices = db
+        const closingPrices = await db
             .select()
             .from(schema.priceSnapshots)
             .where(
@@ -122,8 +122,7 @@ export async function GET(
                     gte(schema.priceSnapshots.timestamp, sinceDate.toISOString())
                 )
             )
-            .orderBy(schema.priceSnapshots.timestamp)
-            .all();
+            .orderBy(schema.priceSnapshots.timestamp);
 
         const currentMid = latest ? (latest.minPrice + latest.maxPrice) / 2 : 0;
         const prevMid = prevClose ? (prevClose.minPrice + prevClose.maxPrice) / 2 : currentMid;

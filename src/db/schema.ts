@@ -1,27 +1,24 @@
-import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { pgTable, serial, varchar, real, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
 
-export const products = sqliteTable("products", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull().unique(),
-  nameEn: text("name_en"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  nameEn: varchar("name_en", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const priceSnapshots = sqliteTable(
+export const priceSnapshots = pgTable(
   "price_snapshots",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     productId: integer("product_id")
       .notNull()
       .references(() => products.id),
-    timestamp: text("timestamp").notNull(),
+    timestamp: timestamp("timestamp", { mode: "string" }).notNull(),
     minPrice: real("min_price").notNull(),
     maxPrice: real("max_price").notNull(),
     palletCount: integer("pallet_count").notNull(),
-    isClosingPrice: integer("is_closing_price", { mode: "boolean" })
+    isClosingPrice: boolean("is_closing_price")
       .notNull()
       .default(false),
   },
