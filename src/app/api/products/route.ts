@@ -14,9 +14,15 @@ export async function GET() {
         // Get all products with their latest snapshot and opening snapshot for today
         const products = await db.select().from(schema.products);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString();
+        // Use Kuwait date to determine "today" (works correctly on Vercel which runs in UTC)
+        const kuwaitDate = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kuwait",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        }).format(new Date());
+        // Kuwait midnight in UTC = Kuwait date T00:00:00+03:00 = previous day T21:00:00Z
+        const todayStr = new Date(kuwaitDate + "T00:00:00+03:00").toISOString();
 
         const result = await Promise.all(
             products.map(async (product) => {

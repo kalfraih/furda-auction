@@ -100,9 +100,14 @@ export async function GET(
             .limit(1);
         const prevClose = prevCloseArr[0];
 
-        // Today's first snapshot (opening)
-        const todayStart = new Date(now);
-        todayStart.setHours(0, 0, 0, 0);
+        // Use Kuwait date for "today" start (works correctly on UTC servers)
+        const kuwaitDate = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kuwait",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        }).format(now);
+        const todayStart = new Date(kuwaitDate + "T00:00:00+03:00");
         const openingArr = await db
             .select()
             .from(schema.priceSnapshots)
