@@ -2,122 +2,127 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "./schema";
 import dotenv from "dotenv";
-import { eq } from "drizzle-orm";
-import * as cheerio from "cheerio";
-
-// We re-implement the fetch here to avoid Next.js specific imports in a node script
-dotenv.config();
-
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql, { schema });
-
-const AUCTION_URL = "https://alwafirawebapp-hhg9d6buh3hnefav.uaenorth-01.azurewebsites.net/LiveAuction/GetLiveAuctionGrid?dept=";
-
-const PRODUCT_TRANSLATIONS: Record<string, string> = {
-    "ابوركبه": "Squash (Aburkba)",
-    "بدريه": "Badriya Tomato",
-    "بغل": "Baghal Cucumber",
-    "بربير": "Purslane",
-    "بروكلي": "Broccoli",
-    "ملفوف": "Cabbage",
-    "فلفل بارد": "Bell Pepper",
-    "جزر": "Carrot",
-    "زهرة": "Cauliflower",
-    "كرفس": "Celery",
-    "طماطم شيري": "Cherry Tomato",
-    "فلفل حار": "Hot Pepper",
-    "كوسا": "Zucchini",
-    "كزبرة": "Coriander",
-    "ذرة": "Corn",
-    "خيار": "Cucumber",
-    "باذنجان": "Eggplant",
-    "غلومان": "Ghlouman",
-    "فاصوليا": "Green Beans",
-    "بازلا": "Peas",
-    "حلبه": "Fenugreek",
-    "هندباء": "Endive",
-    "جرجير": "Arugula",
-    "طماطم": "Tomato",
-    "بطاطا": "Potato",
-    "بصل": "Onion",
-    "ثوم": "Garlic",
-    "ليمون": "Lemon",
-    "نعنع": "Mint",
-    "بقدنوس": "Parsley",
-    "شبت": "Dill",
-    "خس": "Lettuce",
-    "روكا": "Rocket",
-    "سبانخ": "Spinach",
-    "فجل": "Radish",
-    "شمندر": "Beetroot",
-    "لفت": "Turnip",
-    "كراث": "Leek",
-};
 
 async function main() {
-    console.log("Fetching live data from ALFORDA...");
+    console.log("Starting static seed script...");
+    dotenv.config();
 
-    const response = await fetch(AUCTION_URL, {
-        headers: { "User-Agent": "FurdaAuction/1.0" },
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch auction data: ${response.status}`);
+    if (!process.env.DATABASE_URL) {
+        throw new Error("DATABASE_URL is not set");
     }
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
+    const sql = neon(process.env.DATABASE_URL);
+    const db = drizzle(sql, { schema });
 
-    const products: { product: string; minPrice: number; maxPrice: number; palletCount: number }[] = [];
+    const PRODUCT_TRANSLATIONS: Record<string, string> = {
+        "ابوركبه": "Squash (Aburkba)",
+        "بدريه": "Badriya Tomato",
+        "بغل": "Baghal Cucumber",
+        "بربير": "Purslane",
+        "بروكلي": "Broccoli",
+        "ملفوف": "Cabbage",
+        "فلفل بارد": "Bell Pepper",
+        "جزر": "Carrot",
+        "زهرة": "Cauliflower",
+        "كرفس": "Celery",
+        "طماطم شيري": "Cherry Tomato",
+        "فلفل حار": "Hot Pepper",
+        "كوسا": "Zucchini",
+        "كزبرة": "Coriander",
+        "ذرة": "Corn",
+        "خيار": "Cucumber",
+        "باذنجان": "Eggplant",
+        "غلومان": "Ghlouman",
+        "فاصوليا": "Green Beans",
+        "بازلا": "Peas",
+        "حلبه": "Fenugreek",
+        "هندباء": "Endive",
+        "جرجير": "Arugula",
+        "طماطم": "Tomato",
+        "بطاطا": "Potato",
+        "بصل": "Onion",
+        "ثوم": "Garlic",
+        "ليمون": "Lemon",
+        "نعنع": "Mint",
+        "بقدنوس": "Parsley",
+        "شبت": "Dill",
+        "خس": "Lettuce",
+        "روكا": "Rocket",
+        "سبانخ": "Spinach",
+        "فجل": "Radish",
+        "شمندر": "Beetroot",
+        "لفت": "Turnip",
+        "كراث": "Leek",
+    };
 
-    $("tbody tr").each((_, row) => {
-        const cells = $(row).find("td");
-        if (cells.length >= 4) {
-            const palletCount = parseInt($(cells[0]).text().trim(), 10) || 0;
-            const maxPrice = parseFloat($(cells[1]).text().trim()) || 0;
-            const minPrice = parseFloat($(cells[2]).text().trim()) || 0;
-            const product = $(cells[3]).text().trim();
+    const seedProducts = [
+        "خيار", "طماطم شيري", "بروكلي", "كوسا", "باذنجان",
+        "فلفل بارد", "فلفل حار", "جزر", "ملفوف", "زهرة",
+        "فاصوليا", "بربير", "جرجير", "بازلا", "كزبرة",
+        "ذرة", "ابوركبه", "بدريه", "بغل", "كرفس",
+        "غلومان", "حلبه", "هندباء",
+    ];
 
-            if (product) {
-                products.push({ product, minPrice, maxPrice, palletCount });
-            }
-        }
-    });
+    const basePrices: Record<string, { min: number; max: number; pallets: number }> = {
+        "خيار": { min: 0.275, max: 2.9, pallets: 200 },
+        "طماطم شيري": { min: 0.075, max: 2.9, pallets: 17 },
+        "بروكلي": { min: 0.3, max: 0.8, pallets: 14 },
+        "كوسا": { min: 0.2, max: 0.8, pallets: 79 },
+        "باذنجان": { min: 0.05, max: 1.75, pallets: 166 },
+        "فلفل بارد": { min: 0.3, max: 1.25, pallets: 7 },
+        "فلفل حار": { min: 0.075, max: 1.4, pallets: 83 },
+        "جزر": { min: 0.4, max: 0.4, pallets: 1 },
+        "ملفوف": { min: 0.05, max: 0.9, pallets: 244 },
+        "زهرة": { min: 0.2, max: 0.875, pallets: 55 },
+        "فاصوليا": { min: 0.2, max: 2.925, pallets: 57 },
+        "بربير": { min: 0.1, max: 0.75, pallets: 10 },
+        "جرجير": { min: 0.25, max: 1.65, pallets: 35 },
+        "بازلا": { min: 0.075, max: 0.55, pallets: 4 },
+        "كزبرة": { min: 0.05, max: 0.4, pallets: 46 },
+        "ذرة": { min: 1.35, max: 1.7, pallets: 3 },
+        "ابوركبه": { min: 0.05, max: 0.05, pallets: 1 },
+        "بدريه": { min: 0.2, max: 0.75, pallets: 9 },
+        "بغل": { min: 0.05, max: 0.25, pallets: 7 },
+        "كرفس": { min: 0.05, max: 0.075, pallets: 4 },
+        "غلومان": { min: 0.4, max: 0.4, pallets: 1 },
+        "حلبه": { min: 0.075, max: 0.2, pallets: 4 },
+        "هندباء": { min: 0.075, max: 0.075, pallets: 1 },
+    };
 
-    if (products.length === 0) {
-        console.log("No products found in the live table. Market might be completely empty or format changed.");
-        return;
-    }
-
-    console.log(`Found ${products.length} live products. Removing old dummy data...`);
+    console.log("Removing old dummy data from Neon database...");
     await db.delete(schema.priceSnapshots);
     await db.delete(schema.products);
 
-    console.log("Inserting real products and setting them as yesterday's close...");
+    console.log("Inserting static realistic baseline prices for tomorrow's open...");
 
-    // Set timestamp to yesterday
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(16, 0, 0, 0); // Set to 4 PM yesterday
+    yesterday.setHours(16, 0, 0, 0);
     const timestamp = yesterday.toISOString();
 
-    for (const item of products) {
+    for (const name of seedProducts) {
+        const base = basePrices[name];
+        if (!base) continue;
+
         const inserted = await db.insert(schema.products).values({
-            name: item.product,
-            nameEn: PRODUCT_TRANSLATIONS[item.product] || null,
+            name,
+            nameEn: PRODUCT_TRANSLATIONS[name] || null,
         }).returning();
 
         await db.insert(schema.priceSnapshots).values({
             productId: inserted[0].id,
             timestamp,
-            minPrice: item.minPrice,
-            maxPrice: item.maxPrice,
-            palletCount: item.palletCount,
-            isClosingPrice: true, // Set as previous close!
+            minPrice: base.min,
+            maxPrice: base.max,
+            palletCount: base.pallets,
+            isClosingPrice: true,
         });
     }
 
-    console.log("✅ Live data seeding complete!");
+    console.log("✅ Static data seeding complete!");
 }
 
-main().catch(console.error);
+main().catch((err) => {
+    console.error("FATAL ERROR IN SEED SCRIPT:", err);
+    process.exit(1);
+});

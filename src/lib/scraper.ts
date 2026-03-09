@@ -123,13 +123,18 @@ export async function scrapeAuction(): Promise<ScrapeResult> {
         },
     });
 
+    const products: AuctionProduct[] = [];
+
     if (!response.ok) {
+        if (response.status === 404) {
+            // Market table is likely offline, return closed market state
+            return { isMarketOpen: false, products, scrapedAt };
+        }
         throw new Error(`Failed to fetch auction data: ${response.status}`);
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    const products: AuctionProduct[] = [];
 
     // Parse table rows - RTL DOM order: Pallets, Max, Min, Product
     $("tbody tr").each((_, row) => {
