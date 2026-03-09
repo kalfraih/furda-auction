@@ -4,6 +4,11 @@ import { desc, eq, and, gte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
+// Postgres timestamp column strips the Z suffix — re-add it so browsers parse as UTC
+function utc(ts: string): string {
+    return ts.endsWith("Z") ? ts : ts + "Z";
+}
+
 export async function GET() {
     try {
         // Get all products with their latest snapshot and opening snapshot for today
@@ -86,9 +91,9 @@ export async function GET() {
                     change: Number(change.toFixed(3)),
                     changePercent: Number(changePercent.toFixed(2)),
                     palletCount: latest.palletCount,
-                    lastUpdate: latest.timestamp,
+                    lastUpdate: utc(latest.timestamp),
                     sparkline: intradaySnapshots.map((s) => ({
-                        time: s.timestamp,
+                        time: utc(s.timestamp),
                         mid: Number(((s.minPrice + s.maxPrice) / 2).toFixed(3)),
                     })),
                 };
