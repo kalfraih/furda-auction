@@ -42,6 +42,27 @@ export default function ProductCard({
             ? "var(--loss)"
             : "var(--neutral)";
 
+    const getProductIcon = (nameEn: string | null, nameAr: string) => {
+        const name = (nameEn || nameAr).toLowerCase();
+        if (name.includes("tomato")) return "🍅";
+        if (name.includes("cucumber")) return "🥒";
+        if (name.includes("eggplant")) return "🍆";
+        if (name.includes("pepper")) return "🫑";
+        if (name.includes("carrot")) return "🥕";
+        if (name.includes("cabbage")) return "🥬";
+        if (name.includes("broccoli")) return "🥦";
+        if (name.includes("cauliflower")) return "🥦"; // closest
+        if (name.includes("corn")) return "🌽";
+        if (name.includes("potato")) return "🥔";
+        if (name.includes("onion")) return "🧅";
+        if (name.includes("garlic")) return "🧄";
+        if (name.includes("lemon")) return "🍋";
+        if (name.includes("squash") || name.includes("zucchini")) return "🥒";
+        if (name.includes("beans") || name.includes("peas")) return "🫛";
+        if (name.includes("lettuce") || name.includes("leaf") || name.includes("mint") || name.includes("parsley") || name.includes("coriander") || name.includes("arugula")) return "🌿";
+        return "🥬"; // fallback
+    };
+
     return (
         <div
             onClick={onClick}
@@ -95,7 +116,7 @@ export default function ProductCard({
                             flexShrink: 0,
                         }}
                     >
-                        🥬
+                        {getProductIcon(product.nameEn, product.name)}
                     </div>
                     <div style={{ minWidth: 0 }}>
                         <div
