@@ -10,6 +10,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { getIntradayBounds } from "@/lib/chartUtils";
 
 interface ChartDataPoint {
     time: string;
@@ -103,7 +104,7 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
         );
     }
 
-    const formatXAxis = (time: string) => {
+    const formatXAxis = (time: string | number) => {
         const d = new Date(time);
         if (period === "1D") {
             return d.toLocaleTimeString("en-US", {
@@ -142,9 +143,25 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
     const palletValues = data.map((d) => d.pallets || 0);
     const palletMax = Math.max(...palletValues, 1);
 
+    // Map `time` to numeric `timeMs` for correct time scaling on the X-axis for 1D
+    const parsedData = data.map((d) => ({
+        ...d,
+        timeMs: new Date(d.time).getTime(),
+    }));
+
+    let xDomain: [number, number] | ["dataMin", "dataMax"] | undefined = undefined;
+    if (period === "1D") {
+        const bounds = getIntradayBounds(data);
+        if (bounds) {
+            xDomain = bounds;
+        } else {
+            xDomain = ["dataMin", "dataMax"];
+        }
+    }
+
     return (
         <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <ComposedChart data={parsedData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={gradientColor} stopOpacity={0.25} />
@@ -161,7 +178,10 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                     vertical={false}
                 />
                 <XAxis
-                    dataKey="time"
+                    dataKey={period === "1D" ? "timeMs" : "time"}
+                    type={period === "1D" ? "number" : "category"}
+                    domain={xDomain}
+                    scale={period === "1D" ? "time" : "auto"}
                     tickFormatter={formatXAxis}
                     stroke="var(--text-muted)"
                     fontSize={11}

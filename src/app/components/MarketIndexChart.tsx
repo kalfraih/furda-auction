@@ -11,6 +11,7 @@ import {
     ResponsiveContainer,
     Legend,
 } from "recharts";
+import { getIntradayBounds } from "@/lib/chartUtils";
 
 interface MarketIndexPoint {
     time: string;
@@ -255,7 +256,7 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
         );
     }
 
-    const formatXAxis = (time: string) => {
+    const formatXAxis = (time: string | number) => {
         const d = new Date(time);
         if (period === "1D") {
             return d.toLocaleTimeString("en-US", {
@@ -288,6 +289,22 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
     const rightMin = Math.min(...rightValues);
     const rightMax = Math.max(...rightValues);
     const rightPad = (rightMax - rightMin) * 0.15 || 1;
+
+    // Map time to numeric timeMs for proper X-axis scaling in 1D
+    const parsedData = (data || []).map((d) => ({
+        ...d,
+        timeMs: new Date(d.time).getTime(),
+    }));
+
+    let xDomain: [number, number] | ["dataMin", "dataMax"] | undefined = undefined;
+    if (period === "1D" && intradayData) {
+        const bounds = getIntradayBounds(intradayData as any);
+        if (bounds) {
+            xDomain = bounds;
+        } else {
+            xDomain = ["dataMin", "dataMax"];
+        }
+    }
 
     // Summary stats from latest data point
     const latest = data && data.length > 0 ? data[data.length - 1] : null;
@@ -364,7 +381,7 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
             ) : (
                 <ResponsiveContainer width="100%" height={200}>
                     <LineChart
-                        data={data}
+                        data={parsedData}
                         margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
                     >
                         <CartesianGrid
@@ -373,7 +390,10 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
                             vertical={false}
                         />
                         <XAxis
-                            dataKey="time"
+                            dataKey={period === "1D" ? "timeMs" : "time"}
+                            type={period === "1D" ? "number" : "category"}
+                            domain={xDomain}
+                            scale={period === "1D" ? "time" : "auto"}
                             tickFormatter={formatXAxis}
                             stroke="var(--text-muted)"
                             fontSize={11}
