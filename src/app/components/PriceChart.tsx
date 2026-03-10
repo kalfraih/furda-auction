@@ -181,7 +181,6 @@ export default function PriceChart({ data, period, changeColor }: PriceChartProp
                     dataKey={period === "1D" ? "timeMs" : "time"}
                     type={period === "1D" ? "number" : "category"}
                     domain={xDomain}
-                    scale={period === "1D" ? "time" : "auto"}
                     tickFormatter={formatXAxis}
                     stroke="var(--text-muted)"
                     fontSize={11}

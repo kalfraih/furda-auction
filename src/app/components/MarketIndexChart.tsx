@@ -393,7 +393,6 @@ export default function MarketIndexChart({ data: intradayData }: MarketIndexChar
                             dataKey={period === "1D" ? "timeMs" : "time"}
                             type={period === "1D" ? "number" : "category"}
                             domain={xDomain}
-                            scale={period === "1D" ? "time" : "auto"}
                             tickFormatter={formatXAxis}
                             stroke="var(--text-muted)"
                             fontSize={11}
